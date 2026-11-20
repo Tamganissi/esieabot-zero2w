@@ -35,7 +35,18 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 RACINE = os.path.dirname(ICI)
 sys.path.insert(0, ICI)
 
+import socket  # noqa: E402
+
 from main import charger_config, config_logs  # noqa: E402
+
+
+class ServeurDoublePile(ThreadingHTTPServer):
+    """Écoute en IPv6 ET en IPv4 : pizero2w.local peut se résoudre en adresse IPv6 sur le PC."""
+    address_family = socket.AF_INET6
+
+    def server_bind(self):
+        self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        super().server_bind()
 from safety import Securite, etat_texte, melange_arcade, pwm_minimum, rampe, zone_morte  # noqa: E402
 
 log = logging.getLogger("web")
@@ -311,7 +322,7 @@ def main():
         signal.signal(s, sortie)
 
     robot = RobotWeb(cfg, simulation=a.simulation, avec_oled=not a.sans_oled, code=a.code)
-    serveur = ThreadingHTTPServer(("0.0.0.0", a.port), fabrique_handler(robot))
+    serveur = ServeurDoublePile(("::", a.port), fabrique_handler(robot))
     serveur.daemon_threads = True
     threading.Thread(target=serveur.serve_forever, name="http", daemon=True).start()
     log.info("démarrage web (%s) port %d — CODE D'ACCÈS : %s — moteurs à l'arrêt, désarmé",
