@@ -1,0 +1,14 @@
+[Unit]
+Description=Gadget USB composite NCM (réseau) + ACM (console) pour pizero2w
+After=systemd-modules-load.service
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/pizero2w-gadget.sh start
+ExecStop=/usr/local/sbin/pizero2w-gadget.sh stop
+
+[Install]
+WantedBy=multi-user.target

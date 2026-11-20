@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ESIEAbot</title>
+<style>
+  :root { --fond:#111; --carte:#1d1d1d; --txt:#eee; --gris:#888; --vert:#2e9d4f; --rouge:#c62828; --bleu:#1565c0; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--fond); color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; overscroll-behavior:none; }
+  body { display:flex; flex-direction:column; align-items:center; padding:12px 16px; gap:12px;
+    touch-action:none; user-select:none; -webkit-user-select:none; }
+  #etat { width:100%; max-width:420px; background:var(--carte); border-radius:12px; padding:10px 14px; }
+  #etat .l1 { font-size:22px; font-weight:700; }
+  #etat .l2 { font-size:14px; color:var(--gris); margin-top:2px; }
+  #zone { position:relative; width:min(78vw,300px); height:min(78vw,300px); border-radius:50%;
+    background:radial-gradient(circle,#2a2a2a 0,#1a1a1a 70%); border:2px solid #333; }
+  #bouton { position:absolute; width:34%; height:34%; left:33%; top:33%; border-radius:50%;
+    background:#555; border:2px solid #777; }
+  #zone.actif #bouton { background:var(--bleu); border-color:#64b5f6; }
+  .rang { display:flex; gap:10px; width:100%; max-width:420px; }
+  button { flex:1; font-size:17px; font-weight:700; padding:14px 6px; border-radius:10px; border:0;
+    color:#fff; background:#333; }
+  #armer { background:var(--vert); } #stop { background:#555; } #urgence { background:var(--rouge); font-size:19px; }
+  button.choisi { outline:3px solid #fff; }
+  #aide { font-size:12px; color:var(--gris); max-width:420px; text-align:center; }
+  #codeBox { display:none; flex-direction:column; gap:10px; width:100%; max-width:320px; margin-top:30vh; }
+  #codeBox input { font-size:28px; text-align:center; padding:10px; border-radius:10px; border:0; letter-spacing:8px; }
+</style>
+</head>
+<body>
+<div id="codeBox">
+  <div style="text-align:center">Code affiché sur l'écran du robot :</div>
+  <input id="code" inputmode="numeric" maxlength="4" autocomplete="off">
+  <button id="valider" style="background:var(--bleu)">Valider</button>
+</div>
+<div id="app" style="display:contents">
+  <div id="etat"><div class="l1" id="l1">Connexion…</div><div class="l2" id="l2"></div></div>
+  <div id="zone"><div id="bouton"></div></div>
+  <div class="rang"><button id="armer">ARMER</button><button id="stop">STOP</button></div>
+  <div class="rang"><button id="lent">LENT</button><button id="normal">NORMAL</button></div>
+  <div class="rang"><button id="urgence">ARRÊT D'URGENCE</button></div>
+  <div id="aide">Joystick : haut = avancer, côtés = tourner. Relâcher = arrêt.<br>
+    Clavier PC : flèches ou ZQSD, Espace = STOP, Échap = urgence.</div>
+</div>
+<script>
+"use strict";
+const $ = (i) => document.getElementById(i);
+const id = Math.random().toString(36).slice(2, 10);
+let code = "";
+try { code = localStorage.getItem("esieabot_code") || ""; } catch (e) {}
+let x = 0, y = 0, touche = false, enCours = false, dernierOk = 0;
+const clavier = new Set();
+
+function demanderCode() { $("app").style.display = "none"; $("codeBox").style.display = "flex"; $("code").focus(); }
+$("valider").onclick = () => {
+  code = $("code").value.trim();
+  try { localStorage.setItem("esieabot_code", code); } catch (e) {}
+  $("codeBox").style.display = "none"; $("app").style.display = "contents";
+};
+
+async function envoyer(chemin, corps) {
+  const r = await fetch(chemin, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(Object.assign({ code, id }, corps)), cache: "no-store" });
+  if (r.status === 403) { demanderCode(); throw new Error("code"); }
+  const j = await r.json();
+  if (!r.ok) { $("l2").textContent = j.erreur || ("erreur " + r.status); throw new Error(j.erreur); }
+  return j;
+}
+function afficher(s) {
+  dernierOk = Date.now();
+  $("l1").textContent = s.etat + (s.simulation ? " (simulation)" : "");
+  let t = "Vitesse " + s.vitesse + " % · profil " + s.profil;
+  if (s.vbat) t += " · batterie " + s.vbat + " V";
+  if (s.arme && !s.moi_pilote) t += " · piloté par un autre appareil";
+  else if (!s.arme && s.raison) t += " · " + s.raison;
+  $("l2").textContent = t;
+  $("lent").classList.toggle("choisi", s.profil === "LENT");
+  $("normal").classList.toggle("choisi", s.profil === "NORMAL");
+}
+async function action(a) { try { afficher(await envoyer("/api/action", { action: a })); } catch (e) {} }
+
+// Envoi de la consigne 10 fois par seconde (le robot s'arrête seul s'il ne reçoit plus rien).
+setInterval(async () => {
+  if (!code || enCours) return;
+  if (!touche) {
+    const kx = (clavier.has("d") || clavier.has("arrowright") ? 1 : 0) - (clavier.has("q") || clavier.has("a") || clavier.has("arrowleft") ? 1 : 0);
+    const ky = (clavier.has("z") || clavier.has("w") || clavier.has("arrowup") ? 1 : 0) - (clavier.has("s") || clavier.has("arrowdown") ? 1 : 0);
+    x = kx; y = ky; placer(kx, ky);
+  }
+  enCours = true;
+  try { afficher(await envoyer("/api/cmd", { x, y })); } catch (e) {}
+  enCours = false;
+}, 100);
+setInterval(() => { if (Date.now() - dernierOk > 1500) { $("l1").textContent = "LIAISON PERDUE"; $("l2").textContent = "Le robot s'arrête tout seul."; } }, 500);
+
+// Joystick tactile / souris
+const zone = $("zone"), bouton = $("bouton");
+function placer(nx, ny) {
+  const r = zone.clientWidth * 0.33;
+  bouton.style.transform = "translate(" + (nx * r) + "px," + (-ny * r) + "px)";
+}
+function suivre(ev) {
+  const b = zone.getBoundingClientRect();
+  let dx = (ev.clientX - b.left - b.width / 2) / (b.width * 0.4);
+  let dy = -(ev.clientY - b.top - b.height / 2) / (b.height * 0.4);
+  const n = Math.hypot(dx, dy); if (n > 1) { dx /= n; dy /= n; }
+  x = dx; y = dy; placer(dx, dy);
+}
+zone.addEventListener("pointerdown", (ev) => { touche = true; zone.classList.add("actif"); zone.setPointerCapture(ev.pointerId); suivre(ev); });
+zone.addEventListener("pointermove", (ev) => { if (touche) suivre(ev); });
+function relacher() { touche = false; x = 0; y = 0; placer(0, 0); zone.classList.remove("actif"); }
+zone.addEventListener("pointerup", relacher);
+zone.addEventListener("pointercancel", relacher);
+zone.addEventListener("lostpointercapture", relacher);
+
+window.addEventListener("keydown", (ev) => {
+  const k = ev.key.toLowerCase();
+  if (k === " ") { ev.preventDefault(); action("stop"); return; }
+  if (k === "escape") { action("urgence"); return; }
+  if (k.startsWith("arrow")) ev.preventDefault();
+  clavier.add(k);
+});
+window.addEventListener("keyup", (ev) => clavier.delete(ev.key.toLowerCase()));
+window.addEventListener("blur", () => { clavier.clear(); relacher(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) { clavier.clear(); relacher(); action("stop"); } });
+
+for (const a of ["armer", "stop", "urgence", "lent", "normal"]) $(a).onclick = () => action(a);
+if (!code) demanderCode();
+</script>
+</body>
+</html>

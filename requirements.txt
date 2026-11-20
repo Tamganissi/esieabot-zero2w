@@ -1,0 +1,4 @@
+lgpio>=0.2.2
+smbus2
+luma.oled>=3.16
+pillow

@@ -1,0 +1,17 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+logs/
+*.log
+*.bak
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+# Jamais de secrets ni de configuration cloud-init remplie
+user-data
+network-config
+id_ed25519*
+*.pem
+.env

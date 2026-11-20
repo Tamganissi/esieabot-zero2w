@@ -1,0 +1,57 @@
+{
+  "_doc": "Configuration ESIEAbot. Broches BCM issues de la doc officielle et des sources esieabot-scripts (add-on board v2). Correspondance de la manette : valeurs officielles (esieabot-demo-v4.c / esieabot-pwm.c), puis boutons A/B/X/Y/SELECT selon la convention des manettes génériques. A VALIDER avec tools/calibrer_manette.py.",
+
+  "moteurs": {
+    "gauche": { "avant": 23, "arriere": 25, "inverser": false },
+    "droit":  { "avant": 22, "arriere": 17, "inverser": false },
+    "frequence_pwm_hz": 1000,
+    "gpio_defaut_drv8411": 27
+  },
+
+  "capteurs_vitesse": { "gauche": 24, "droit": 16 },
+
+  "carte_alimentation": { "adresse_i2c": 90, "activer_moteurs_a_l_armement": true },
+
+  "oled": { "actif": true, "adresse_i2c": 60, "largeur": 128, "hauteur": 64, "rafraichissement_max_hz": 4 },
+
+  "manette": {
+    "peripherique": "auto",
+    "_doc_manette": "Relevé réel du 19/11/2026 : le dongle ESIEA s'annonce 045e:028e 'Microsoft X-Box 360 pad' (pilote xpad). Table lue par ioctl JSIOCGAXMAP/JSIOCGBTNMAP. Axes 2 et 5 = gâchettes LT/RT (repos = -1), non utilisées.",
+    "axes": {
+      "gauche_x": 0,
+      "gauche_y": 1,
+      "droit_x": 3,
+      "droit_y": 4,
+      "croix_x": 6,
+      "croix_y": 7
+    },
+    "inverser_y": true,
+    "boutons": {
+      "A": 0,
+      "B": 1,
+      "X": 2,
+      "Y": 3,
+      "SELECT": 6,
+      "START": 7
+    }
+  },
+
+  "conduite": {
+    "zone_morte": 0.12,
+    "vitesse_max_autorisee": 0.75,
+    "pwm_minimum": 0.40,
+    "_pwm_minimum_doc": "Mesure du 19/11/2026, roues dans le vide : 30 % ne démarre pas la roue gauche, 45 % fait tourner les 4 sens (81-92 fronts/s). Toute consigne non nulle commence donc à 40 %.",
+    "profils": { "LENT": 0.55, "NORMAL": 0.75 },
+    "profil_initial": "LENT",
+    "vitesse_croix": 0.45,
+    "rampe_par_seconde": 2.5,
+    "gain_virage": 0.7,
+    "modes": ["MANUEL", "DUAL"]
+  },
+
+  "securite": {
+    "timeout_inactivite_s": 0,
+    "_timeout_doc": "0 = desactive. Un joystick maintenu immobile n'envoie plus d'evenement : un timeout couperait les moteurs en pleine ligne droite. A regler apres le test 'manette eteinte' (voir README).",
+    "periode_boucle_s": 0.02
+  }
+}
