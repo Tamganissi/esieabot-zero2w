@@ -62,4 +62,5 @@ Host pi-wifi
 | `VID_0000&PID_0002` | Câble ou alimentation |
 | UsbNcm présent, pas de ping | `usb0` « unmanaged » → règle udev `86-pizero2w-usb0-managed.rules` |
 | Dongle USB non reconnu | Port en `peripheral` → `sudo tools/usb_mode.sh otg --reboot` (SSH par Wi-Fi ensuite) |
+| `pizero2w.local` ne répond pas mais l'IP oui | Le nom se résout en IPv6, bloqué par certains partages de connexion → dans `/etc/avahi/avahi-daemon.conf` : `use-ipv6=no` et `publish-aaaa-on-ipv4=no` |
 | Instabilité | `vcgencmd get_throttled` doit renvoyer `0x0` |
