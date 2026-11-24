@@ -2,6 +2,17 @@
 
 Pilotage du robot **ESIEAbot** (Add-on Board ESIEA **v2**) sur un **Raspberry Pi Zero 2 W** sous **Raspberry Pi OS Lite 64 bits (Debian 13 Trixie)**, à la manette sans fil ou depuis un navigateur web, avec connexion au PC Windows par **câble USB (réseau + port série)** et par **Wi-Fi**.
 
+<p align="center">
+  <img src="photos/robot_vue_avant.jpg" alt="ESIEAbot assemblé : Pi Zero 2 W, Add-on Board, batterie et moteurs" width="48%">
+  <img src="photos/robot_dessus_oled.jpg" alt="Vue de dessus : écran OLED allumé avec l'état du robot" width="40%">
+</p>
+
+▶️ **[Vidéo de démonstration : le robot piloté à distance](photos/demo_pilotage.mp4)**
+
+| Add-on Board ESIEA v2 + OLED | Moteurs et capteurs de vitesse |
+|---|---|
+| ![Add-on Board](photos/addon_board_esiea.jpg) | ![Moteurs](photos/moteurs_capteurs_vitesse.jpg) |
+
 ## Pourquoi ce projet
 Les programmes officiels ESIEAbot reposent sur le démon `pigpiod`, qui **n'existe plus dans Debian 13**. Ce projet reprend leur logique (mêmes broches, même PWM sur le DRV8411, même protocole I2C pour la carte d'alimentation) avec les bibliothèques prises en charge par Trixie : **lgpio** et **smbus2**.
 
@@ -32,7 +43,7 @@ install.sh                 Installation sur le Pi
 
 ## Installation (sur le Pi)
 ```bash
-git clone https://github.com/<votre-compte>/esieabot-zero2w.git ~/esieabot
+git clone https://github.com/Tamganissi/esieabot-zero2w.git ~/esieabot
 cd ~/esieabot
 ./install.sh            # paquets apt, venv, services systemd (non activés)
 ```
